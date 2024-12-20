@@ -4,7 +4,7 @@ import cv2
 import torch
 import psutil
 import subprocess
-from collections import Counter
+from collections import defaultdict, deque
 from ultralytics import YOLO
 from graphs import draw_boxes
 from pathlib import Path
@@ -43,43 +43,50 @@ def get_gpu_memory():
         return 'NA'
 
 @torch.no_grad()
-def detect(weights='yolo11n.pt',
-           source='0',
-           stframe=None,
-           kpi1_text=None,
-           kpi2_text=None,
-           kpi3_text=None,
-           js1_text=None,
-           js2_text=None,
-           js3_text=None,
-           conf_thres=0.25,
-           nosave=True,
-           display_labels=True,
-           conf_thres_drift=0.75,
-           save_poor_frame__=False,
-           inf_ov_1_text=None,
-           inf_ov_2_text=None,
-           inf_ov_3_text=None,
-           inf_ov_4_text=None,
-           fps_warn=None,
-           fps_drop_warn_thresh=8,
-           stats_update_interval=5,
-           frame_update_interval=5,
-           save_interval=5,
-           save_threshold=3,
-           project='runs/detect',
-           name='exp'):
+def detect(
+    weights='yolo11n.pt',
+    source='0',
+    stframe=None,
+    kpi1_text=None,
+    kpi2_text=None,
+    kpi3_text=None,
+    js1_text=None,
+    js2_text=None,
+    js3_text=None,
+    conf_thres=0.25,
+    nosave=True,
+    display_labels=True,
+    conf_thres_drift=0.75,
+    save_poor_frame__=False,
+    inf_ov_1_text=None,
+    inf_ov_2_text=None,
+    inf_ov_3_text=None,
+    inf_ov_4_text=None,
+    fps_warn=None,
+    fps_drop_warn_thresh=8,
+    stats_update_interval=5,
+    frame_update_interval=10,
+    save_interval=10,
+    save_threshold=3,
+    project='runs/detect',
+    name='exp'
+):
     model = YOLO(weights)
 
     # Initialize counters and holders
     prev_time = time.time()
     last_stats_update = time.time()
-    global_graph_dict = dict()
+    last_save_time = time.time()
+    global_graph_dict = defaultdict(int)
     test_drift = set()
     poor_perf_frame_counter = 0
-    min_FPS = 10000
-    max_FPS = -1
-    last_save_time = time.time()
+    min_FPS = float('inf')
+    max_FPS = 0
+    frame_num = -1
+    frame_counter = 0  # New counter
+
+    # FPS smoothing
+    fps_deque = deque(maxlen=30)  # Adjust window size as needed
 
     # Use model.track with stream=True to get frame-by-frame results
     results = model.track(
@@ -91,9 +98,7 @@ def detect(weights='yolo11n.pt',
         persist=True,
         stream=True
     )
-    frame_num = -1
-    frame_counter = 0  # New counter
-
+    
     for r in results:
         frame_num += 1
         frame_counter += 1
@@ -103,12 +108,11 @@ def detect(weights='yolo11n.pt',
         confs = boxes.conf.cpu().tolist() if boxes.conf is not None else []
         track_ids = boxes.id.int().cpu().tolist() if boxes.id is not None else []
 
-        mapped_ = dict()
-        # Count classes in current frame
+        # Update class counts
         if len(class_indices) > 0:
-            class_counts = Counter([model.names[c] for c in class_indices])
-            mapped_.update(class_counts)
-        global_graph_dict = Counter(global_graph_dict) + Counter(mapped_)
+            for cls_idx in class_indices:
+                cls_name = model.names[cls_idx]
+                global_graph_dict[cls_name] += 1
 
         # Drift detection (poor performing frames)
         low_conf_detections = [model.names[c_idx] for c_idx, conf_ in zip(class_indices, confs)
@@ -123,10 +127,9 @@ def detect(weights='yolo11n.pt',
                     poor_perf_frame_counter += 1
                     last_save_time = current_time
 
-        # Draw boxes and labels if needed
+        # Draw boxes and labels
         if len(track_ids) > 0:
             xyxy = boxes.xyxy.cpu()
-            # draw boxes with IDs
             draw_boxes(im0, xyxy, track_ids)
 
             if display_labels:
@@ -140,14 +143,20 @@ def detect(weights='yolo11n.pt',
 
         # Compute FPS
         curr_time = time.time()
-        fps_ = round(1 / (curr_time - prev_time), 1)
+        elapsed = curr_time - prev_time
+        if elapsed > 0:
+            fps_ = 1 / elapsed
+        else:
+            fps_ = 0.0
+        fps_deque.append(fps_)
         prev_time = curr_time
 
         # Update system stats at defined intervals
         if (curr_time - last_stats_update) >= stats_update_interval:
             memory_usage = f"{psutil.virtual_memory().percent}%"
             cpu_usage = f"{psutil.cpu_percent()}%"
-            gpu_memory = f"{get_gpu_memory()} MB"
+            gpu_mem = get_gpu_memory()
+            gpu_memory = f"{gpu_mem} MB" if gpu_mem != 'NA' else 'NA'
 
             js1_text.write(memory_usage)
             js2_text.write(cpu_usage)
@@ -157,24 +166,32 @@ def detect(weights='yolo11n.pt',
 
         # Update Inference Stats at frame intervals
         if frame_counter % frame_update_interval == 0:
-            kpi1_text.write(f"{fps_} FPS")
-            if fps_ < fps_drop_warn_thresh:
-                fps_warn.warning(f"FPS dropped below {fps_drop_warn_thresh}")
-            kpi2_text.write(str(mapped_))
-            kpi3_text.write(str(global_graph_dict))
+            avg_fps = sum(fps_deque) / len(fps_deque) if fps_deque else 0.0
+            kpi1_text.write(f"{avg_fps:.1f} FPS")
+
+            if avg_fps < fps_drop_warn_thresh:
+                fps_warn.warning(f"Average FPS below {fps_drop_warn_thresh}")
+
+            kpi2_text.write(str(dict(global_graph_dict)))
+            kpi3_text.write(str(len(global_graph_dict)))
 
             inf_ov_1_text.write(str(test_drift))
             inf_ov_2_text.write(str(poor_perf_frame_counter))
 
-            if fps_ < min_FPS:
-                min_FPS = fps_
-                inf_ov_3_text.write(str(min_FPS))
-            if fps_ > max_FPS:
-                max_FPS = fps_
-                inf_ov_4_text.write(str(max_FPS))
+            if avg_fps < min_FPS:
+                min_FPS = avg_fps
+                inf_ov_3_text.write(f"{min_FPS:.1f} FPS")
+
+            if avg_fps > max_FPS:
+                max_FPS = avg_fps
+                inf_ov_4_text.write(f"{max_FPS:.1f} FPS")
+
+            # Reset FPS deque after updating
+            fps_deque.clear()
 
         # Display frame in Streamlit
-        stframe.image(im0, channels="BGR", use_container_width=True)
+        if stframe is not None:
+            stframe.image(im0, channels="BGR", use_container_width=True)
 
     # After loop ends
     save_queue.put((None, None))  # Signal the thread to exit
