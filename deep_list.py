@@ -22,24 +22,30 @@ def get_gpu_memory():
 def detect(weights='yolo11n.pt',
            source='0',
            stframe=None,
-           kpi1_text="",
-           kpi2_text="", kpi3_text="",
-           js1_text="", js2_text="", js3_text="",
+           kpi1_text=None,
+           kpi2_text=None,
+           kpi3_text=None,
+           js1_text=None,
+           js2_text=None,
+           js3_text=None,
            conf_thres=0.25,
            nosave=True,
            display_labels=True,
            conf_thres_drift=0.75,
            save_poor_frame__=False,
-           inf_ov_1_text="", inf_ov_2_text="", inf_ov_3_text="", inf_ov_4_text="",
-           fps_warn="", fps_drop_warn_thresh=8):
-    """
-    Perform detection + tracking using YOLOv11 on video streams, update stats in the Streamlit dashboard.
-    """
+           inf_ov_1_text=None,
+           inf_ov_2_text=None,
+           inf_ov_3_text=None,
+           inf_ov_4_text=None,
+           fps_warn=None,
+           fps_drop_warn_thresh=8,
+           stats_update_interval=1.0):  # Interval in seconds
 
     model = YOLO(weights)
 
     # Initialize counters and holders
     prev_time = time.time()
+    last_stats_update = time.time()  # Track last stats update time
     global_graph_dict = dict()
     test_drift = []
     poor_perf_frame_counter = 0
@@ -72,7 +78,7 @@ def detect(weights='yolo11n.pt',
                 if cls_name not in test_drift:
                     test_drift.append(cls_name)
                 if save_poor_frame__:
-                    cv2.imwrite("drift_frames/frame_{0}.png".format(frame_num), im0)
+                    cv2.imwrite(f"drift_frames/frame_{frame_num}.png", im0)
                     poor_perf_frame_counter += 1
 
         # Draw boxes and labels if needed
@@ -85,21 +91,30 @@ def detect(weights='yolo11n.pt',
                 for box, cls_idx, conf_ in zip(xyxy, class_indices, confs):
                     x1, y1, x2, y2 = map(int, box)
                     label = f"{model.names[cls_idx]} {conf_:.2f}"
-                    cv2.putText(im0, label, (x1, max(y1 - 10, 0)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,255), 2)
+                    cv2.putText(im0, label, (x1, max(y1 - 10, 0)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
                 # Flush buffer
                 sys.stdout.flush()
 
         # Compute FPS
         curr_time = time.time()
-        fps_ = round(1/(curr_time - prev_time),1)
+        fps_ = round(1 / (curr_time - prev_time), 1)
         prev_time = curr_time
 
-        # Update system stats
-        js1_text.write(str(psutil.virtual_memory()[2])+"%")
-        js2_text.write(str(psutil.cpu_percent())+'%')
-        js3_text.write(str(get_gpu_memory())+' MB')
+        # Update system stats at defined intervals
+        if (curr_time - last_stats_update) >= stats_update_interval:
+            memory_usage = f"{psutil.virtual_memory().percent}%"
+            cpu_usage = f"{psutil.cpu_percent()}%"
+            gpu_memory = f"{get_gpu_memory()} MB"
 
-        kpi1_text.write(str(fps_)+' FPS')
+            js1_text.write(memory_usage)
+            js2_text.write(cpu_usage)
+            js3_text.write(gpu_memory)
+
+            last_stats_update = curr_time  # Reset the timer
+
+        # Update Inference Stats every frame
+        kpi1_text.write(f"{fps_} FPS")
         if fps_ < fps_drop_warn_thresh:
             fps_warn.warning(f"FPS dropped below {fps_drop_warn_thresh}")
         kpi2_text.write(str(mapped_))
