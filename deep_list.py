@@ -39,7 +39,7 @@ def detect(weights='yolo11n.pt',
            inf_ov_4_text=None,
            fps_warn=None,
            fps_drop_warn_thresh=8,
-           stats_update_interval=1.0):  # Interval in seconds
+           stats_update_interval=5):
 
     model = YOLO(weights)
 
