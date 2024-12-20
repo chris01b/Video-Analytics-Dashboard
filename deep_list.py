@@ -4,9 +4,40 @@ import cv2
 import torch
 import psutil
 import subprocess
+import csv
 from collections import Counter
 from ultralytics import YOLO
 from graphs import draw_boxes
+from pathlib import Path
+from threading import Thread, Lock
+from queue import Queue
+
+# Initialize a thread-safe queue and a lock
+save_queue = Queue()
+save_lock = Lock()
+
+def save_compressed_frame(frame_num, frame):
+    save_path = f"drift_frames/frame_{frame_num}.jpg"
+    cv2.imwrite(save_path, frame, [int(cv2.IMWRITE_JPEG_QUALITY), 90])  # 90% quality
+
+def save_frames_worker():
+    while True:
+        frame_num, frame = save_queue.get()
+        if frame_num is None:
+            break  # Sentinel to stop the thread
+        Path("drift_frames").mkdir(parents=True, exist_ok=True)
+        save_compressed_frame(frame_num, frame)
+        save_queue.task_done()
+
+# Start the background thread
+save_thread = Thread(target=save_frames_worker, daemon=True)
+save_thread.start()
+
+# Initialize logging
+log_file = "drift_logs.csv"
+with open(log_file, mode='w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(["Frame Number", "Timestamp", "Low Confidence Detections"])
 
 def get_gpu_memory():
     try:
@@ -40,20 +71,33 @@ def detect(weights='yolo11n.pt',
            fps_warn=None,
            fps_drop_warn_thresh=8,
            stats_update_interval=5,
-           frame_update_interval=5):
+           frame_update_interval=5,
+           save_interval=5,
+           save_threshold=3,
+           project='runs/detect',
+           name='exp'):
     model = YOLO(weights)
 
     # Initialize counters and holders
     prev_time = time.time()
     last_stats_update = time.time()
     global_graph_dict = dict()
-    test_drift = []
+    test_drift = set()
     poor_perf_frame_counter = 0
     min_FPS = 10000
     max_FPS = -1
+    last_save_time = time.time()
 
     # Use model.track with stream=True to get frame-by-frame results
-    results = model.track(source=source, conf=conf_thres, persist=True, stream=True)
+    results = model.track(
+        source=source,
+        conf=conf_thres,
+        save=not nosave,
+        project=project,
+        name=name,
+        persist=True,
+        stream=True
+    )
     frame_num = -1
     frame_counter = 0  # New counter
 
@@ -74,14 +118,23 @@ def detect(weights='yolo11n.pt',
         global_graph_dict = Counter(global_graph_dict) + Counter(mapped_)
 
         # Drift detection (poor performing frames)
-        for c_idx, conf_ in zip(class_indices, confs):
-            if conf_ < conf_thres_drift:
-                cls_name = model.names[c_idx]
-                if cls_name not in test_drift:
-                    test_drift.append(cls_name)
+        low_conf_detections = [model.names[c_idx] for c_idx, conf_ in zip(class_indices, confs)
+                                if conf_ < conf_thres_drift]
+        if low_conf_detections:
+            test_drift.update(low_conf_detections)
+            # Implement threshold: save frame only if more than 'save_threshold' low-confidence detections
+            current_time = time.time()
+            if len(low_conf_detections) >= save_threshold and (current_time - last_save_time) >= save_interval:
                 if save_poor_frame__:
-                    cv2.imwrite(f"drift_frames/frame_{frame_num}.png", im0)
+                    save_queue.put((frame_num, im0.copy()))
                     poor_perf_frame_counter += 1
+                    last_save_time = current_time
+
+        # Optionally log metadata instead of saving frames
+        # with save_lock:
+        #     with open("drift_logs.csv", mode='a', newline='') as file:
+        #         writer = csv.writer(file)
+        #         writer.writerow([frame_num, time.time(), low_conf_detections])
 
         # Draw boxes and labels if needed
         if len(track_ids) > 0:
@@ -137,4 +190,6 @@ def detect(weights='yolo11n.pt',
         stframe.image(im0, channels="BGR", use_container_width=True)
 
     # After loop ends
+    save_queue.put((None, None))  # Signal the thread to exit
+    save_thread.join()
     print("Inference Complete")
