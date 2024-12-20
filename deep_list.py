@@ -4,7 +4,6 @@ import cv2
 import torch
 import psutil
 import subprocess
-import csv
 from collections import Counter
 from ultralytics import YOLO
 from graphs import draw_boxes
@@ -32,12 +31,6 @@ def save_frames_worker():
 # Start the background thread
 save_thread = Thread(target=save_frames_worker, daemon=True)
 save_thread.start()
-
-# Initialize logging
-log_file = "drift_logs.csv"
-with open(log_file, mode='w', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(["Frame Number", "Timestamp", "Low Confidence Detections"])
 
 def get_gpu_memory():
     try:
@@ -129,12 +122,6 @@ def detect(weights='yolo11n.pt',
                     save_queue.put((frame_num, im0.copy()))
                     poor_perf_frame_counter += 1
                     last_save_time = current_time
-
-        # Optionally log metadata instead of saving frames
-        # with save_lock:
-        #     with open("drift_logs.csv", mode='a', newline='') as file:
-        #         writer = csv.writer(file)
-        #         writer.writerow([frame_num, time.time(), low_conf_detections])
 
         # Draw boxes and labels if needed
         if len(track_ids) > 0:
