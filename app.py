@@ -17,15 +17,16 @@ def main():
 
     fps_drop_warn_thresh = st.sidebar.text_input("FPS drop warning threshold", "8")
 
-    save_output_video = st.sidebar.radio("Save output video?",('Yes', 'No'))
+    # Separate control for saving output video
+    save_output_video = st.sidebar.radio("Save output video?", ('Yes', 'No'))
     if save_output_video == 'Yes':
         nosave = False
-        display_labels = False
     else:
         nosave = True
-        display_labels = True
 
-    save_poor_frame = st.sidebar.radio("Save poor performing frames?",('Yes', 'No'))
+    display_labels_option = st.sidebar.checkbox("Display Labels", value=True)
+
+    save_poor_frame = st.sidebar.radio("Save poor performing frames?", ('Yes', 'No'))
     if save_poor_frame == "Yes":
         save_poor_frame__ = True
     else:
@@ -81,7 +82,7 @@ def main():
                 inf_ov_1_text = st.markdown("0")
 
             with inf_ov_2:
-                st.markdown("**No. of poor peforming frames**")
+                st.markdown("**No. of poor performing frames**")
                 inf_ov_2_text = st.markdown("0")
 
             with inf_ov_3:
@@ -97,7 +98,7 @@ def main():
                 stframe=stframe,
                 kpi1_text=kpi1_text, kpi2_text=kpi2_text, kpi3_text=kpi3_text,
                 js1_text=js1_text, js2_text=js2_text, js3_text=js3_text,
-                conf_thres=float(conf_thres), nosave=nosave, display_labels=display_labels,
+                conf_thres=float(conf_thres), nosave=nosave, display_labels=display_labels_option,
                 conf_thres_drift=float(conf_thres_drift), save_poor_frame__=save_poor_frame__,
                 inf_ov_1_text=inf_ov_1_text, inf_ov_2_text=inf_ov_2_text,
                 inf_ov_3_text=inf_ov_3_text, inf_ov_4_text=inf_ov_4_text,
@@ -153,7 +154,7 @@ def main():
                 inf_ov_1_text = st.markdown("0")
 
             with inf_ov_2:
-                st.markdown("**No. of poor peforming frames**")
+                st.markdown("**No. of poor performing frames**")
                 inf_ov_2_text = st.markdown("0")
 
             with inf_ov_3:
@@ -169,7 +170,7 @@ def main():
                 stframe=stframe,
                 kpi1_text=kpi1_text, kpi2_text=kpi2_text, kpi3_text=kpi3_text,
                 js1_text=js1_text, js2_text=js2_text, js3_text=js3_text,
-                conf_thres=float(conf_thres), nosave=nosave, display_labels=display_labels,
+                conf_thres=float(conf_thres), nosave=nosave, display_labels=display_labels_option,
                 conf_thres_drift=float(conf_thres_drift), save_poor_frame__=save_poor_frame__,
                 inf_ov_1_text=inf_ov_1_text, inf_ov_2_text=inf_ov_2_text,
                 inf_ov_3_text=inf_ov_3_text, inf_ov_4_text=inf_ov_4_text,
@@ -222,7 +223,7 @@ def main():
                 inf_ov_1_text = st.markdown("0")
 
             with inf_ov_2:
-                st.markdown("**No. of poor peforming frames**")
+                st.markdown("**No. of poor performing frames**")
                 inf_ov_2_text = st.markdown("0")
 
             with inf_ov_3:
@@ -238,7 +239,7 @@ def main():
                 stframe=stframe,
                 kpi1_text=kpi1_text, kpi2_text=kpi2_text, kpi3_text=kpi3_text,
                 js1_text=js1_text, js2_text=js2_text, js3_text=js3_text,
-                conf_thres=float(conf_thres), nosave=nosave, display_labels=display_labels,
+                conf_thres=float(conf_thres), nosave=nosave, display_labels=display_labels_option,
                 conf_thres_drift=float(conf_thres_drift), save_poor_frame__=save_poor_frame__,
                 inf_ov_1_text=inf_ov_1_text, inf_ov_2_text=inf_ov_2_text,
                 inf_ov_3_text=inf_ov_3_text, inf_ov_4_text=inf_ov_4_text,
