@@ -39,13 +39,13 @@ def detect(weights='yolo11n.pt',
            inf_ov_4_text=None,
            fps_warn=None,
            fps_drop_warn_thresh=8,
-           stats_update_interval=5):
-
+           stats_update_interval=5,
+           frame_update_interval=5):
     model = YOLO(weights)
 
     # Initialize counters and holders
     prev_time = time.time()
-    last_stats_update = time.time()  # Track last stats update time
+    last_stats_update = time.time()
     global_graph_dict = dict()
     test_drift = []
     poor_perf_frame_counter = 0
@@ -55,9 +55,11 @@ def detect(weights='yolo11n.pt',
     # Use model.track with stream=True to get frame-by-frame results
     results = model.track(source=source, conf=conf_thres, persist=True, stream=True)
     frame_num = -1
+    frame_counter = 0  # New counter
 
     for r in results:
         frame_num += 1
+        frame_counter += 1
         im0 = r.orig_img
         boxes = r.boxes
         class_indices = boxes.cls.int().cpu().tolist() if boxes.cls is not None else []
@@ -113,22 +115,23 @@ def detect(weights='yolo11n.pt',
 
             last_stats_update = curr_time  # Reset the timer
 
-        # Update Inference Stats every frame
-        kpi1_text.write(f"{fps_} FPS")
-        if fps_ < fps_drop_warn_thresh:
-            fps_warn.warning(f"FPS dropped below {fps_drop_warn_thresh}")
-        kpi2_text.write(str(mapped_))
-        kpi3_text.write(str(global_graph_dict))
+        # Update Inference Stats at frame intervals
+        if frame_counter % frame_update_interval == 0:
+            kpi1_text.write(f"{fps_} FPS")
+            if fps_ < fps_drop_warn_thresh:
+                fps_warn.warning(f"FPS dropped below {fps_drop_warn_thresh}")
+            kpi2_text.write(str(mapped_))
+            kpi3_text.write(str(global_graph_dict))
 
-        inf_ov_1_text.write(str(test_drift))
-        inf_ov_2_text.write(str(poor_perf_frame_counter))
+            inf_ov_1_text.write(str(test_drift))
+            inf_ov_2_text.write(str(poor_perf_frame_counter))
 
-        if fps_ < min_FPS:
-            min_FPS = fps_
-            inf_ov_3_text.write(str(min_FPS))
-        if fps_ > max_FPS:
-            max_FPS = fps_
-            inf_ov_4_text.write(str(max_FPS))
+            if fps_ < min_FPS:
+                min_FPS = fps_
+                inf_ov_3_text.write(str(min_FPS))
+            if fps_ > max_FPS:
+                max_FPS = fps_
+                inf_ov_4_text.write(str(max_FPS))
 
         # Display frame in Streamlit
         stframe.image(im0, channels="BGR", use_container_width=True)
