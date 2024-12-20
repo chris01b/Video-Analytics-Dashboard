@@ -11,11 +11,23 @@ def main():
         ('RTSP', 'Webcam', 'Local video')
     )
 
-    conf_thres = st.sidebar.number_input("Class confidence threshold", min_value=0.0, max_value=1.0, value=0.25, step=0.01)
+    conf_thres = st.sidebar.number_input(
+        "Class confidence threshold",
+        min_value=0.0, max_value=1.0,
+        value=0.25, step=0.01
+    )
 
-    conf_thres_drift = st.sidebar.number_input("Class confidence threshold for drift detection", min_value=0.0, max_value=1.0, value=0.75, step=0.01)
+    conf_thres_drift = st.sidebar.number_input(
+        "Class confidence threshold for drift detection",
+        min_value=0.0, max_value=1.0,
+        value=0.75, step=0.01
+    )
 
-    fps_drop_warn_thresh = st.sidebar.number_input("FPS drop warning threshold", min_value=1.0, max_value=60.0, value=8.0, step=0.5)
+    fps_drop_warn_thresh = st.sidebar.number_input(
+        "FPS drop warning threshold",
+        min_value=1.0, max_value=60.0,
+        value=8.0, step=0.5
+    )
 
     # Separate control for saving output video
     save_output_video = st.sidebar.radio("Save output video?", ('Yes', 'No'))
@@ -26,9 +38,21 @@ def main():
     save_poor_frame = st.sidebar.radio("Save poor performing frames?", ('Yes', 'No'))
     save_poor_frame__ = True if save_poor_frame == "Yes" else False
 
+    # New parameter: Display Interval
+    display_interval = st.sidebar.number_input(
+        "Frame Display Interval",
+        min_value=1, max_value=100,  # Adjust as needed
+        value=1, step=1,
+        help="Display every Nth frame. Default is 1 (every frame)."
+    )
+
     # ------------------------- LOCAL VIDEO ------------------------------
     if input_source == "Local video":
-        video = st.sidebar.file_uploader("Select input video", type=["mp4", "avi"], accept_multiple_files=False)
+        video = st.sidebar.file_uploader(
+            "Select input video",
+            type=["mp4", "avi"],
+            accept_multiple_files=False
+        )
 
         if st.sidebar.button("Start tracking") and video is not None:
             stframe = st.empty()
@@ -85,16 +109,28 @@ def main():
                 st.markdown("**Maximum FPS**")
                 inf_ov_4_text = st.markdown("0 FPS")
 
+            # Start detection
             detect(
                 source=video.name,
                 stframe=stframe,
-                kpi1_text=kpi1_text, kpi2_text=kpi2_text, kpi3_text=kpi3_text,
-                js1_text=js1_text, js2_text=js2_text, js3_text=js3_text,
-                conf_thres=conf_thres, nosave=nosave, display_labels=display_labels_option,
-                conf_thres_drift=conf_thres_drift, save_poor_frame__=save_poor_frame__,
-                inf_ov_1_text=inf_ov_1_text, inf_ov_2_text=inf_ov_2_text,
-                inf_ov_3_text=inf_ov_3_text, inf_ov_4_text=inf_ov_4_text,
-                fps_warn=fps_warn, fps_drop_warn_thresh=fps_drop_warn_thresh
+                kpi1_text=kpi1_text,
+                kpi2_text=kpi2_text,
+                kpi3_text=kpi3_text,
+                js1_text=js1_text,
+                js2_text=js2_text,
+                js3_text=js3_text,
+                conf_thres=conf_thres,
+                nosave=nosave,
+                display_labels=display_labels_option,
+                conf_thres_drift=conf_thres_drift,
+                save_poor_frame__=save_poor_frame__,
+                inf_ov_1_text=inf_ov_1_text,
+                inf_ov_2_text=inf_ov_2_text,
+                inf_ov_3_text=inf_ov_3_text,
+                inf_ov_4_text=inf_ov_4_text,
+                fps_warn=fps_warn,
+                fps_drop_warn_thresh=fps_drop_warn_thresh,
+                display_interval=display_interval
             )
 
             inference_msg.success("Inference Complete!")
@@ -155,23 +191,38 @@ def main():
                 st.markdown("**Maximum FPS**")
                 inf_ov_4_text = st.markdown("0 FPS")
 
+            # Start detection
             detect(
                 source='0',
                 stframe=stframe,
-                kpi1_text=kpi1_text, kpi2_text=kpi2_text, kpi3_text=kpi3_text,
-                js1_text=js1_text, js2_text=js2_text, js3_text=js3_text,
-                conf_thres=conf_thres, nosave=nosave, display_labels=display_labels_option,
-                conf_thres_drift=conf_thres_drift, save_poor_frame__=save_poor_frame__,
-                inf_ov_1_text=inf_ov_1_text, inf_ov_2_text=inf_ov_2_text,
-                inf_ov_3_text=inf_ov_3_text, inf_ov_4_text=inf_ov_4_text,
-                fps_warn=fps_warn, fps_drop_warn_thresh=fps_drop_warn_thresh
+                kpi1_text=kpi1_text,
+                kpi2_text=kpi2_text,
+                kpi3_text=kpi3_text,
+                js1_text=js1_text,
+                js2_text=js2_text,
+                js3_text=js3_text,
+                conf_thres=conf_thres,
+                nosave=nosave,
+                display_labels=display_labels_option,
+                conf_thres_drift=conf_thres_drift,
+                save_poor_frame__=save_poor_frame__,
+                inf_ov_1_text=inf_ov_1_text,
+                inf_ov_2_text=inf_ov_2_text,
+                inf_ov_3_text=inf_ov_3_text,
+                inf_ov_4_text=inf_ov_4_text,
+                fps_warn=fps_warn,
+                fps_drop_warn_thresh=fps_drop_warn_thresh,
+                display_interval=display_interval
             )
 
             inference_msg.success("Inference Complete!")
 
     # -------------------------- RTSP ------------------------------------
     if input_source == "RTSP":
-        rtsp_input = st.sidebar.text_input("RTSP Stream URL", "rtsp://192.168.0.1/stream")
+        rtsp_input = st.sidebar.text_input(
+            "RTSP Stream URL",
+            "rtsp://192.168.0.1/stream"
+        )
 
         if st.sidebar.button("Start tracking") and rtsp_input:
             stframe = st.empty()
@@ -228,16 +279,28 @@ def main():
                 st.markdown("**Maximum FPS**")
                 inf_ov_4_text = st.markdown("0 FPS")
 
+            # Start detection
             detect(
                 source=rtsp_input,
                 stframe=stframe,
-                kpi1_text=kpi1_text, kpi2_text=kpi2_text, kpi3_text=kpi3_text,
-                js1_text=js1_text, js2_text=js2_text, js3_text=js3_text,
-                conf_thres=conf_thres, nosave=nosave, display_labels=display_labels_option,
-                conf_thres_drift=conf_thres_drift, save_poor_frame__=save_poor_frame__,
-                inf_ov_1_text=inf_ov_1_text, inf_ov_2_text=inf_ov_2_text,
-                inf_ov_3_text=inf_ov_3_text, inf_ov_4_text=inf_ov_4_text,
-                fps_warn=fps_warn, fps_drop_warn_thresh=fps_drop_warn_thresh
+                kpi1_text=kpi1_text,
+                kpi2_text=kpi2_text,
+                kpi3_text=kpi3_text,
+                js1_text=js1_text,
+                js2_text=js2_text,
+                js3_text=js3_text,
+                conf_thres=conf_thres,
+                nosave=nosave,
+                display_labels=display_labels_option,
+                conf_thres_drift=conf_thres_drift,
+                save_poor_frame__=save_poor_frame__,
+                inf_ov_1_text=inf_ov_1_text,
+                inf_ov_2_text=inf_ov_2_text,
+                inf_ov_3_text=inf_ov_3_text,
+                inf_ov_4_text=inf_ov_4_text,
+                fps_warn=fps_warn,
+                fps_drop_warn_thresh=fps_drop_warn_thresh,
+                display_interval=display_interval
             )
 
             inference_msg.success("Inference Complete!")
