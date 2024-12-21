@@ -305,10 +305,6 @@ def main():
 
             inference_msg.success("Inference Complete!")
 
-    # Optional: Clear cache on rerun
-    if st.sidebar.button("Clear Cache"):
-        st.caching.clear_cache()
-
 if __name__ == "__main__":
     try:
         main()
