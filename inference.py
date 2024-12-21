@@ -16,7 +16,7 @@ def run_inference(
     project='runs/detect',
     name='exp',
     conf_thres_drift=0.75,
-    save_poor_frame__=False,
+    save_poor_frame=False,
     save_threshold=3,
     save_interval=10,
     display_interval=1,
@@ -103,7 +103,7 @@ def run_inference(
             # Implement threshold: save frame only if more than 'save_threshold' low-confidence detections
             current_time = time.time()
             if len(low_conf_detections) >= save_threshold and (current_time - last_save_time) >= save_interval:
-                if save_poor_frame__:
+                if save_poor_frame:
                     frame_saver.enqueue_frame(frame_num, im0.copy())
                     poor_perf_frame_counter += 1
                     last_save_time = current_time

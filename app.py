@@ -35,8 +35,8 @@ def main():
 
     display_labels_option = st.sidebar.checkbox("Display Labels", value=True)
 
-    save_poor_frame = st.sidebar.radio("Save poor performing frames?", ('Yes', 'No'))
-    save_poor_frame__ = True if save_poor_frame == "Yes" else False
+    save_poor_frame_radio = st.sidebar.radio("Save poor performing frames?", ('Yes', 'No'))
+    save_poor_frame = True if save_poor_frame_radio == "Yes" else False
 
     # New parameter: Display Interval
     display_interval = st.sidebar.number_input(
@@ -123,7 +123,7 @@ def main():
                 nosave=nosave,
                 display_labels=display_labels_option,
                 conf_thres_drift=conf_thres_drift,
-                save_poor_frame__=save_poor_frame__,
+                save_poor_frame=save_poor_frame,
                 inf_ov_1_text=inf_ov_1_text,
                 inf_ov_2_text=inf_ov_2_text,
                 inf_ov_3_text=inf_ov_3_text,
@@ -205,7 +205,7 @@ def main():
                 nosave=nosave,
                 display_labels=display_labels_option,
                 conf_thres_drift=conf_thres_drift,
-                save_poor_frame__=save_poor_frame__,
+                save_poor_frame=save_poor_frame,
                 inf_ov_1_text=inf_ov_1_text,
                 inf_ov_2_text=inf_ov_2_text,
                 inf_ov_3_text=inf_ov_3_text,
@@ -293,7 +293,7 @@ def main():
                 nosave=nosave,
                 display_labels=display_labels_option,
                 conf_thres_drift=conf_thres_drift,
-                save_poor_frame__=save_poor_frame__,
+                save_poor_frame=save_poor_frame,
                 inf_ov_1_text=inf_ov_1_text,
                 inf_ov_2_text=inf_ov_2_text,
                 inf_ov_3_text=inf_ov_3_text,

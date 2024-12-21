@@ -19,5 +19,6 @@ class Detector:
             project=project,
             name=name,
             persist=persist,
-            stream=stream
+            stream=stream,
+            verbose=False
         )
