@@ -1,5 +1,5 @@
 import streamlit as st
-from deep_list import detect
+from inference import run_inference
 
 def main():
     st.title("YOLOv11 Object Detection Dashboard")
@@ -110,7 +110,7 @@ def main():
                 inf_ov_4_text = st.markdown("0 FPS")
 
             # Start detection
-            detect(
+            run_inference(
                 source=video.name,
                 stframe=stframe,
                 kpi1_text=kpi1_text,
@@ -136,7 +136,7 @@ def main():
             inference_msg.success("Inference Complete!")
 
     # -------------------------- WEBCAM ----------------------------------
-    if input_source == "Webcam":
+    elif input_source == "Webcam":
         if st.sidebar.button("Start tracking"):
             stframe = st.empty()
             st.subheader("Inference Stats")
@@ -192,7 +192,7 @@ def main():
                 inf_ov_4_text = st.markdown("0 FPS")
 
             # Start detection
-            detect(
+            run_inference(
                 source='0',
                 stframe=stframe,
                 kpi1_text=kpi1_text,
@@ -218,7 +218,7 @@ def main():
             inference_msg.success("Inference Complete!")
 
     # -------------------------- RTSP ------------------------------------
-    if input_source == "RTSP":
+    elif input_source == "RTSP":
         rtsp_input = st.sidebar.text_input(
             "RTSP Stream URL",
             "rtsp://192.168.0.1/stream"
@@ -280,7 +280,7 @@ def main():
                 inf_ov_4_text = st.markdown("0 FPS")
 
             # Start detection
-            detect(
+            run_inference(
                 source=rtsp_input,
                 stframe=stframe,
                 kpi1_text=kpi1_text,
