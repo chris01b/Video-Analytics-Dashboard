@@ -59,9 +59,6 @@ def run_inference(
     # FPS smoothing
     fps_deque = deque(maxlen=30)  # Adjust window size as needed
 
-    # Initialize GPU memory usage
-    gpu_memory_usage = get_gpu_memory()
-
     # Use model.track with stream=True to get frame-by-frame results
     results = detector.track(
         source=source,
