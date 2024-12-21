@@ -2,7 +2,7 @@ import streamlit as st
 from inference import run_inference
 
 def main():
-    st.title("YOLOv11 Object Detection Dashboard")
+    st.title("Dashboard")
     inference_msg = st.empty()
     st.sidebar.title("Configuration")
 
@@ -221,7 +221,7 @@ def main():
     elif input_source == "RTSP":
         rtsp_input = st.sidebar.text_input(
             "RTSP Stream URL",
-            "rtsp://192.168.0.1/stream"
+            "rtsp://127.0.0.1:8554/stream"
         )
 
         if st.sidebar.button("Start tracking") and rtsp_input:
